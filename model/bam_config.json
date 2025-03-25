@@ -1,0 +1,58 @@
+{
+    "mx106": {
+        "model": {
+            "kt": 2.23138890457851,
+            "R": 2.3717487904639545,
+            "armature": 0.02457397334336701,
+            "friction_base": 6.653380436533205e-13,
+            "friction_stribeck": 0.10491060771568866,
+            "load_friction_base": 0.009150334028953775,
+            "load_friction_stribeck": 0.22235912179095094,
+            "dtheta_stribeck": 1.6232949773728853,
+            "alpha": 1.323485668999259,
+            "friction_viscous": 0.05096082506010955,
+            "model": "m4",
+            "actuator": "mx106"
+        },
+        "dofs": [
+            "left_ankle_roll",
+            "right_ankle_roll",
+            "left_ankle_pitch",
+            "right_ankle_pitch",
+            "left_knee",
+            "right_knee",
+            "left_hip_roll",
+            "right_hip_roll",
+            "left_hip_pitch",
+            "right_hip_pitch"
+        ]
+    },
+    "mx64": {
+        "model": {
+            "kt": 1.6631556605652682,
+            "R": 3.1560000816605682,
+            "armature": 0.010961212217454795,
+            "friction_base": 0.061549466501679174,
+            "friction_stribeck": 0.02389528618121147,
+            "load_friction_base": 1.9611119490261663e-10,
+            "load_friction_stribeck": 0.23428996680337053,
+            "dtheta_stribeck": 1.5205782308422509,
+            "alpha": 1.3344007931759223,
+            "friction_viscous": 0.014754905791636505,
+            "model": "m4",
+            "actuator": "mx64"
+        },
+        "dofs": [
+            "left_shoulder_pitch",
+            "right_shoulder_pitch",
+            "left_shoulder_roll",
+            "right_shoulder_roll",
+            "left_elbow",
+            "right_elbow",
+            "head_pitch",
+            "head_yaw",
+            "left_hip_yaw",
+            "right_hip_yaw"
+        ]
+    }
+}
