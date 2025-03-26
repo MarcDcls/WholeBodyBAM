@@ -12,6 +12,7 @@ import pandas
 import os
 
 DT = 0.01
+excluded_dofs = ["head_pitch", "head_yaw"]
 
 parser = argparse.ArgumentParser(description="Parser for read_log.py")
 parser.add_argument("--log", "-l", help="Path to the log file", default=None)
@@ -71,7 +72,7 @@ for start, end, log, kp in logs:
                                     [0, 1, 0, 0],
                                     [1, 0, 0, 0.2],
                                     [0, 0, 0, 1]])
-            
+        
         sims = {"m1": {"sim": Simulator(use_bam=True, model_dir="model/mujoco")}, 
                 "m2": {"sim": Simulator(use_bam=True, model_dir="model/mujoco")},
                 "m3": {"sim": Simulator(use_bam=True, model_dir="model/mujoco")},
@@ -127,7 +128,8 @@ for start, end, log, kp in logs:
             read_positions[dof] = []
             goal_positions[dof] = []
             for key in sims.keys():
-                sims_positions[key][dof] = []
+                if dof not in excluded_dofs:
+                    sims_positions[key][dof] = []
 
         if args.render:
             sims[args.vizualized]["sim"].render(True)
@@ -156,7 +158,8 @@ for start, end, log, kp in logs:
 
                 if t >= t_start and t < t_end:
                     for dof in read_robot.joint_names():
-                        sims_positions[key][dof].append(sim["sim"].get_q(dof))
+                        if dof not in excluded_dofs:
+                            sims_positions[key][dof].append(sim["sim"].get_q(dof))
                     
             t = sims["m1"]["sim"].t + history.smallestTimestamp()
             if args.render:
@@ -176,7 +179,12 @@ for start, end, log, kp in logs:
 
 # Plotting dofs data
 if args.plot:
-    plot_dofs = ["right_ankle_roll"]
+    # plot_dofs = ["right_knee"]
+    plot_dofs = ["right_shoulder_pitch", 
+                 "right_shoulder_roll", 
+                 "right_elbow",
+                 "right_hip_pitch", 
+                 "right_ankle_pitch"]
 
     for kp, data in simulated_data.items():
         for dof in plot_dofs:
@@ -209,6 +217,9 @@ if args.mae:
 
             mae = 0
             for dof in read_robot.joint_names():
+                if dof in excluded_dofs:
+                    continue
+
                 dof_mae = np.mean(np.abs(np.array(sims_positions[dof]) - np.array(read_positions[dof])))
                 mae += dof_mae
 
@@ -216,7 +227,7 @@ if args.mae:
                     MAEs_per_dof[KEY][dof] = []
                 MAEs_per_dof[KEY][dof].append(dof_mae)
             
-            mae /= len(read_robot.joint_names())
+            mae /= (len(read_robot.joint_names()) - len(excluded_dofs))
             MAEs[KEY].append(mae)
     
     # Saving the MAEs
@@ -228,6 +239,8 @@ if args.mae:
 
     # Plotting MAEs for each dof
     for dof in read_robot.joint_names():
+        if dof in excluded_dofs:
+            continue
         
         plot_data = {"M1": [], "M2": [], "M3": [], "M4": [], "M5": [], "M6": []}
         for key in plot_data.keys():
