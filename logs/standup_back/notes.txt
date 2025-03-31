@@ -1,2 +1,2 @@
-Chute à Kp = 20.
-Pas loin de tomber à Kp = 22.
+Chute à Kp = 16.
+Pas loin de tomber à partir de Kp = 22.

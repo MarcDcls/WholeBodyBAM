@@ -22,8 +22,8 @@ history = placo.HistoryCollection()
 history.loadReplays(args.log)
 print(f"Log loaded, duration: from {history.smallestTimestamp()} to {history.biggestTimestamp()}")
 
-read_robot = placo.HumanoidRobot("model/urdf")
-target_robot = placo.HumanoidRobot("model/urdf")
+read_robot = placo.HumanoidRobot("../workspace/src/rhoban/sigmaban_model/sigmaban")
+target_robot = placo.HumanoidRobot("../workspace/src/rhoban/sigmaban_model/sigmaban")
 
 # Initialization
 read_robot.read_from_histories(history, history.smallestTimestamp(), "read", False, np.zeros(26))
@@ -35,7 +35,8 @@ if args.meshcat:
     time.sleep(3)
 
 if args.simulate:
-    sim = Simulator(use_bam=True, model_dir="model/mujoco", config="model/bam_config.json", kp=args.kp)
+    bam_config = "../workspace/src/rhoban/sigmaban_model/sigmaban_2025/bam_config.json"
+    sim = Simulator(use_bam=True, config=bam_config, kp=args.kp)
     for dof in read_robot.joint_names():
         sim.set_control(dof, read_robot.get_joint(dof), True)
 
