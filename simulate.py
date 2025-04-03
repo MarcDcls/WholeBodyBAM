@@ -13,7 +13,7 @@ MOTION = "squat motion"
 # MOTION = "slow kick"
 excluded_dofs = ["head_pitch", "head_yaw"]
 
-compare_to_mujoco_postion = True
+compare_to_mujoco_postion = False
 
 parser = argparse.ArgumentParser(description="Parser for simulate.py")
 parser.add_argument("--log", "-l", help="Path to the log file", default=None)
@@ -38,7 +38,7 @@ else:
         timings = json.load(f)
     logs = [[value[0], value[1], args.dir + "/" + key, int(key[:2])] for key, value in timings.items()]
     
-read_robot = placo.HumanoidRobot("../workspace/sigmaban/sigmaban")
+read_robot = placo.HumanoidRobot("model/urdf_low")
     
 simulated_data = {}
 for start, end, log, kp in logs:
@@ -58,7 +58,7 @@ for start, end, log, kp in logs:
         print(f"Log loaded, duration: from {history.smallestTimestamp()} to {history.biggestTimestamp()}")
 
         # Initialization
-        target_robot = placo.HumanoidRobot("../workspace/sigmaban/sigmaban")
+        target_robot = placo.HumanoidRobot("model/urdf_low")
 
         read_robot.read_from_histories(history, history.smallestTimestamp(), "read", False, np.zeros(26))
         target_robot.read_from_histories(history, history.smallestTimestamp(), "goal", False, np.zeros(26))
@@ -80,63 +80,26 @@ for start, end, log, kp in logs:
             for dof in read_robot.joint_names():
                 sim_mujoco.set_control(dof, read_robot.get_joint(dof), True)
 
-            sim_mujoco.step()
             sim_mujoco.set_T_world_site("left_foot", np.eye(4))
-            sim_mujoco.step()
             sim_mujoco.t = 0
-            # sim_mujoco.render(False)
 
-        sims = {"m1": {"sim": Simulator(use_bam=True)}, 
-                "m2": {"sim": Simulator(use_bam=True)},
-                "m3": {"sim": Simulator(use_bam=True)},
-                "m4": {"sim": Simulator(use_bam=True)},
-                "m5": {"sim": Simulator(use_bam=True)},
-                "m6": {"sim": Simulator(use_bam=True)}}
-        
-        # sims = {"m1": {"sim": Simulator(use_bam=True, model_dir="../workspace/src/rhoban/sigmaban_model/sigmaban_2025/mujoco")}, 
-        #         "m2": {"sim": Simulator(use_bam=True, model_dir="../workspace/src/rhoban/sigmaban_model/sigmaban_2025/mujoco")},
-        #         "m3": {"sim": Simulator(use_bam=True, model_dir="../workspace/src/rhoban/sigmaban_model/sigmaban_2025/mujoco")},
-        #         "m4": {"sim": Simulator(use_bam=True, model_dir="../workspace/src/rhoban/sigmaban_model/sigmaban_2025/mujoco")},
-        #         "m5": {"sim": Simulator(use_bam=True, model_dir="../workspace/src/rhoban/sigmaban_model/sigmaban_2025/mujoco")},
-        #         "m6": {"sim": Simulator(use_bam=True, model_dir="../workspace/src/rhoban/sigmaban_model/sigmaban_2025/mujoco")}}
+        sims = {"m1": {"sim": Simulator(use_bam=True, bam_model="m1", fancy_model=False, kp=kp, vin=15)}, 
+                "m2": {"sim": Simulator(use_bam=True, bam_model="m2", fancy_model=False, kp=kp, vin=15)},
+                "m3": {"sim": Simulator(use_bam=True, bam_model="m3", fancy_model=False, kp=kp, vin=15)},
+                "m4": {"sim": Simulator(use_bam=True, bam_model="m4", fancy_model=False, kp=kp, vin=15)},
+                "m5": {"sim": Simulator(use_bam=True, bam_model="m5", fancy_model=False, kp=kp, vin=15)},
+                "m6": {"sim": Simulator(use_bam=True, bam_model="m6", fancy_model=False, kp=kp, vin=15)}}
 
-        mx106_actuators = ["left_ankle_roll", "right_ankle_roll",
-                        "left_ankle_pitch", "right_ankle_pitch",
-                        "left_knee", "right_knee",
-                        "left_hip_roll", "right_hip_roll",
-                        "left_hip_pitch", "right_hip_pitch"]
-
-        mx64_actuators = ["left_shoulder_pitch", "right_shoulder_pitch",
-                        "left_shoulder_roll", "right_shoulder_roll",
-                        "left_elbow", "right_elbow",
-                        "head_pitch", "head_yaw",
-                        "left_hip_yaw", "right_hip_yaw"]
-
-        for key, sim in sims.items():
-            # sim["sim"].add_actuator_model("mx106", f"../workspace/src/rhoban/bam/params/mx106/{key}.json", mx106_actuators, kp=kp, vin=15, error_gain=0.158, max_pwm=1.)
-            # sim["sim"].add_actuator_model("mx64", f"../workspace/src/rhoban/bam/params/mx64/{key}.json", mx64_actuators, kp=kp, vin=15, error_gain=0.158, max_pwm=1.)
-            
-            sim["sim"].add_actuator_model("mx106", f"../workspace/src/rhoban/bam/params/mx106/{key}.json", mx106_actuators, kp=kp, vin=15, error_gain=0.158, max_pwm=0.9625)
-            sim["sim"].add_actuator_model("mx64", f"../workspace/src/rhoban/bam/params/mx64/{key}.json", mx64_actuators, kp=kp, vin=15, error_gain=0.158, max_pwm=0.9625)
-            
+        for key, sim in sims.items():            
             for dof in read_robot.joint_names():
                 sim["sim"].set_control(dof, read_robot.get_joint(dof), True)
 
-            sim["sim"].step()
-
             if args.front:
                 sim["sim"].set_T_world_site("trunk", T_world_trunk)
-                for i in range(1000):
-                    sim["sim"].step()
-
             elif args.back:
                 sim["sim"].set_T_world_site("trunk", T_world_trunk)
-                for i in range(1000):
-                    sim["sim"].step()
-            
             else:
                 sim["sim"].set_T_world_site("left_foot", np.eye(4))
-                sim["sim"].step()
 
             sim["sim"].t = 0
 
@@ -147,7 +110,7 @@ for start, end, log, kp in logs:
         read_positions = {}
         goal_positions = {}
         sim_mujoco_positions = {}
-        sims_positions = {"m1": {}, "m2": {}, "m3": {}, "m4": {}, "m5": {}, "m6": {}}
+        sims_positions = {key: {} for key in sims.keys()}
         for dof in read_robot.joint_names():
             read_positions[dof] = []
             goal_positions[dof] = []
@@ -158,7 +121,6 @@ for start, end, log, kp in logs:
 
         if args.render:
             sims[args.vizualized]["sim"].render(False)
-            # sims[args.vizualized]["sim"].viewer._cam.azimuth = 115
             sims[args.vizualized]["sim"].viewer._cam.elevation = -15
             sims[args.vizualized]["sim"].viewer._cam.distance = 1.3
             sims[args.vizualized]["sim"].viewer._cam.lookat[2] = 0.2
@@ -173,7 +135,6 @@ for start, end, log, kp in logs:
             if compare_to_mujoco_postion:
                 for dof in read_robot.joint_names():
                     sim_mujoco.set_control(dof, target_robot.get_joint(dof))
-                # sim_mujoco.render(False)
                 sim_mujoco.step()
 
             if t >= t_start and t < t_end:
@@ -198,7 +159,7 @@ for start, end, log, kp in logs:
                         if dof not in excluded_dofs:
                             sims_positions[key][dof].append(sim["sim"].get_q(dof))
                     
-            t = sims["m1"]["sim"].t + history.smallestTimestamp()
+            t = sims[args.vizualized]["sim"].t + history.smallestTimestamp()
             if args.render:
                 while time.time() - start_time < t - history.smallestTimestamp():
                     continue
@@ -209,14 +170,11 @@ for start, end, log, kp in logs:
                 "sims_positions": sims_positions,
                 "kp": kp}
         
-        if compare_to_mujoco_postion:
-            data["sim_mujoco_positions"] = sim_mujoco_positions
-        
         simulated_data[log[:-4]] = data
 
         # Saving the simulated data
-        # with open(f"{log[:-4]}_simulated.json", "w") as f:
-        #     json.dump(data, f)
+        with open(f"{log[:-4]}_simulated.json", "w") as f:
+            json.dump(data, f)
 
 # Plotting dofs data
 if args.plot:
@@ -227,7 +185,7 @@ if args.plot:
             plt.plot(data["timesteps"], data["goal_positions"][dof], label=f"goal")
 
             if compare_to_mujoco_postion:
-                plt.plot(data["timesteps"], data["sim_mujoco_positions"][dof], label=f"sim_mujoco")
+                plt.plot(data["timesteps"], sim_mujoco_positions[dof], label=f"sim_mujoco")
         
             for key, positions in data["sims_positions"].items():
                 plt.plot(data["timesteps"], positions[dof], label=f"{key}")
@@ -247,9 +205,7 @@ if args.mae:
     KPs = []
 
     for log_name, data in simulated_data.items():
-        # KPs.append(log_name)
         KPs.append("Kp = " + str(data["kp"]))
-
         read_positions = data["read_positions"]
         
         for key, KEY in zip(["m1", "m2", "m3", "m4", "m5", "m6"], MAEs.keys()):
