@@ -6,8 +6,6 @@ https://cad.onshape.com/documents/62a76f7d866be3ef835dd2e4/v/53bc1f0fe452da20430
     <compiler angle="radian" meshdir="assets" autolimits="true" />
     <default>
         <default class="mujoco">
-            <joint frictionloss="0.1" armature="0.005" />
-            <position kp="50" dampratio="1" />
             <default class="visual">
                 <geom type="mesh" contype="0" conaffinity="0" group="2" />
             </default>
@@ -57,7 +55,7 @@ https://cad.onshape.com/documents/62a76f7d866be3ef835dd2e4/v/53bc1f0fe452da20430
     <default>
         <default class="mx106">
             <position kp="56.052098248840714" forcerange="-11.086253609343494 11.086253609343494" />
-            <joint damping="1.6548121650255068" armature="0.10352026623606064" frictionloss="0.10352026623606064" />
+            <joint damping="1.6548121650255068" armature="0.026609234235148" frictionloss="0.10352026623606064" />
         </default>
         <default class="mx64">
             <position kp="31.155829313088017" forcerange="-6.16214978502532 6.16214978502532" />
