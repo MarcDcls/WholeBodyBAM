@@ -13,6 +13,8 @@ MOTION = "squat motion"
 # MOTION = "slow kick"
 excluded_dofs = ["head_pitch", "head_yaw"]
 
+compare_to_mujoco_postion = True
+
 parser = argparse.ArgumentParser(description="Parser for simulate.py")
 parser.add_argument("--log", "-l", help="Path to the log file", default=None)
 parser.add_argument("--dir", "-d", help="Path to the directory containing the logs", default=None)
@@ -72,6 +74,18 @@ for start, end, log, kp in logs:
                                     [1, 0, 0, 0.2],
                                     [0, 0, 0, 1]])
         
+        if compare_to_mujoco_postion:
+            sim_mujoco = Simulator(use_bam=False, model_dir="position_model")
+
+            for dof in read_robot.joint_names():
+                sim_mujoco.set_control(dof, read_robot.get_joint(dof), True)
+
+            sim_mujoco.step()
+            sim_mujoco.set_T_world_site("left_foot", np.eye(4))
+            sim_mujoco.step()
+            sim_mujoco.t = 0
+            # sim_mujoco.render(False)
+
         sims = {"m1": {"sim": Simulator(use_bam=True)}, 
                 "m2": {"sim": Simulator(use_bam=True)},
                 "m3": {"sim": Simulator(use_bam=True)},
@@ -99,9 +113,12 @@ for start, end, log, kp in logs:
                         "left_hip_yaw", "right_hip_yaw"]
 
         for key, sim in sims.items():
-            sim["sim"].add_actuator_model("mx106", f"../workspace/src/rhoban/bam/params/mx106/{key}.json", mx106_actuators, kp=kp)
-            sim["sim"].add_actuator_model("mx64", f"../workspace/src/rhoban/bam/params/mx64/{key}.json", mx64_actuators, kp=kp)
-
+            # sim["sim"].add_actuator_model("mx106", f"../workspace/src/rhoban/bam/params/mx106/{key}.json", mx106_actuators, kp=kp, vin=15, error_gain=0.158, max_pwm=1.)
+            # sim["sim"].add_actuator_model("mx64", f"../workspace/src/rhoban/bam/params/mx64/{key}.json", mx64_actuators, kp=kp, vin=15, error_gain=0.158, max_pwm=1.)
+            
+            sim["sim"].add_actuator_model("mx106", f"../workspace/src/rhoban/bam/params/mx106/{key}.json", mx106_actuators, kp=kp, vin=15, error_gain=0.158, max_pwm=0.9625)
+            sim["sim"].add_actuator_model("mx64", f"../workspace/src/rhoban/bam/params/mx64/{key}.json", mx64_actuators, kp=kp, vin=15, error_gain=0.158, max_pwm=0.9625)
+            
             for dof in read_robot.joint_names():
                 sim["sim"].set_control(dof, read_robot.get_joint(dof), True)
 
@@ -129,10 +146,12 @@ for start, end, log, kp in logs:
         timesteps = []
         read_positions = {}
         goal_positions = {}
+        sim_mujoco_positions = {}
         sims_positions = {"m1": {}, "m2": {}, "m3": {}, "m4": {}, "m5": {}, "m6": {}}
         for dof in read_robot.joint_names():
             read_positions[dof] = []
             goal_positions[dof] = []
+            sim_mujoco_positions[dof] = []
             for key in sims.keys():
                 if dof not in excluded_dofs:
                     sims_positions[key][dof] = []
@@ -151,11 +170,19 @@ for start, end, log, kp in logs:
             read_robot.read_from_histories(history, t, "read", False, np.zeros(26))
             target_robot.read_from_histories(history, t, "goal", False, np.zeros(26))
 
+            if compare_to_mujoco_postion:
+                for dof in read_robot.joint_names():
+                    sim_mujoco.set_control(dof, target_robot.get_joint(dof))
+                # sim_mujoco.render(False)
+                sim_mujoco.step()
+
             if t >= t_start and t < t_end:
                 timesteps.append(t)
                 for dof in read_robot.joint_names():
                     read_positions[dof].append(read_robot.get_joint(dof))
                     goal_positions[dof].append(target_robot.get_joint(dof))
+                    if compare_to_mujoco_postion:
+                        sim_mujoco_positions[dof].append(sim_mujoco.get_q(dof))
 
             for key, sim in sims.items():
                 for dof in read_robot.joint_names():
@@ -182,22 +209,25 @@ for start, end, log, kp in logs:
                 "sims_positions": sims_positions,
                 "kp": kp}
         
+        if compare_to_mujoco_postion:
+            data["sim_mujoco_positions"] = sim_mujoco_positions
+        
         simulated_data[log[:-4]] = data
 
         # Saving the simulated data
-        with open(f"{log[:-4]}_simulated.json", "w") as f:
-            json.dump(data, f)
+        # with open(f"{log[:-4]}_simulated.json", "w") as f:
+        #     json.dump(data, f)
 
 # Plotting dofs data
 if args.plot:
-    # plot_dofs = ["right_knee"]
-    # plot_dofs = ["right_shoulder_pitch"]
-    plot_dofs = ["left_ankle_roll"]
-
+    plot_dofs = ["left_ankle_roll", "left_ankle_pitch", "left_knee", "left_hip_roll", "left_hip_pitch"]
     for kp, data in simulated_data.items():
         for dof in plot_dofs:
             plt.plot(data["timesteps"], data["read_positions"][dof], label=f"read")
             plt.plot(data["timesteps"], data["goal_positions"][dof], label=f"goal")
+
+            if compare_to_mujoco_postion:
+                plt.plot(data["timesteps"], data["sim_mujoco_positions"][dof], label=f"sim_mujoco")
         
             for key, positions in data["sims_positions"].items():
                 plt.plot(data["timesteps"], positions[dof], label=f"{key}")
