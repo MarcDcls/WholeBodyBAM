@@ -44,27 +44,18 @@ for model in ["m1", "m2", "m3", "m4", "m5", "m6"]:
     for kp in range(1, 12)[::-1]:
         print(f"Kp = {kp}")
 
-        sim = Simulator(use_bam=True)
-        sim.add_actuator_model("mx106", f"../workspace/src/rhoban/bam/params/mx106/{model}.json", mx106_actuators, kp=32)
-        sim.add_actuator_model("mx64", f"../workspace/src/rhoban/bam/params/mx64/{model}.json", mx64_actuators, kp=32)
+        sim = Simulator(use_bam=True, bam_model=model, kp=32, vin=15)
 
         # Setting the initial position
         for dof in read_robot.joint_names():
             sim.set_control(dof, read_robot.get_joint(dof), True)
-
-        sim.step()
         sim.set_T_world_site("left_foot", np.eye(4))
-        for i in range(100):
-            sim.step()
         sim.t = 0
-
-        # Dropping the Kp
-        sim.controllers["mx106"]["controller"].model.actuator.kp = kp
-        sim.controllers["mx64"]["controller"].model.actuator.kp = kp
 
         t0 = time.time()
         fallen = False
-        while sim.t < 8:
+        drop = False
+        while sim.t < 12:
             if args.render:
                 sim.render(False)
 
@@ -75,6 +66,10 @@ for model in ["m1", "m2", "m3", "m4", "m5", "m6"]:
             if pressure_sum < 20:
                 fallen = True
                 break
+
+            # Dropping the Kp
+            if not drop and sim.t > 3:
+                sim.set_kp(kp)
 
             if args.render:
                 while time.time() - t0 < sim.t:
